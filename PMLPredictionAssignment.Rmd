@@ -1,0 +1,330 @@
+---
+title: "PML Prediction Assignment"
+author: "Patrick Kim"
+date: "July 24, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+This project, based upon Human Activity Recognition research (Velloso, E.; Bulling, A.; Gellersen, H.; Ugulino, W.; Fuks, H. Qualitative Activity Recognition of Weight Lifting Exercises. Proceedings of 4th International Conference in Cooperation with SIGCHI (Augmented Human '13) . Stuttgart, Germany: ACM SIGCHI, 2013.) fulfills part of the requirement for the Coursera Practical Machine Learning course offered by Johns Hopkins University. The explanation of the project is omitted, since it is included in the course materials for all students.
+
+## Initial Setup
+Files were obtained as directed in course materials. The data were saved to disk and loaded into training and testing data sets. The data were visually inspected at the outset.
+
+```{r initialsetup}
+library(caret)
+trainhtml <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+testhtml <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+download.file(trainhtml, destfile="pkpml-training.csv")
+download.file(testhtml, destfile="pkpml-testing.csv")
+training <- read.csv("./pkpml-training.csv",header=TRUE)
+training2 <- training[,-c(1)]
+```
+
+Visual inspection of the data and rudimentary Excel functions revealed that many of the columns were either mostly empty or filled with NAs. These were removed through R code from both the original training and testing data sets, and then persisted to disk. The columns that were eliminated are shown below.
+
+  * kurtosis\_roll\_belt 
+  * kurtosis\_picth\_belt 
+  * kurtosis\_yaw\_belt 
+  * skewness\_roll\_belt 
+  * skewness\_roll\_belt.1 
+  * skewness\_yaw\_belt 
+  * max\_roll\_belt 
+  * max\_picth\_belt 
+  * max\_yaw\_belt 
+  * min\_roll\_belt 
+  * min\_pitch\_belt 
+  * min\_yaw\_belt 
+  * amplitude_roll_belt 
+  * amplitude\_pitch\_belt 
+  * amplitude\_yaw\_belt 
+  * var\_total\_accel_belt 
+  * avg\_roll\_belt 
+  * stddev\_roll\_belt 
+  * var\_roll_\belt 
+  * avg\_pitch\_belt 
+  * stddev\_pitch\_belt 
+  * var\_pitch\_belt 
+  * avg\_yaw\_belt 
+  * stddev\_yaw\_belt 
+  * var\_yaw\_belt 
+  * var\_accel\_arm 
+  * avg\_roll\_arm 
+  * stddev\_roll\_arm 
+  * var\_roll\_arm 
+  * avg\_pitch\_arm 
+  * stddev\_pitch\_arm 
+  * var\_pitch\_arm 
+  * avg\_yaw\_arm 
+  * stddev\_yaw\_arm 
+  * var\_yaw\_arm 
+  * kurtosis\_roll\_arm 
+  * kurtosis\_picth\_arm 
+  * kurtosis\_yaw\_arm 
+  * skewness\_roll\_arm 
+  * skewness\_pitch\_arm 
+  * skewness\_yaw\_arm 
+  * max\_roll\_arm 
+  * max\_picth\_arm 
+  * max\_yaw\_arm 
+  * min\_roll\_arm 
+  * min\_pitch\_arm 
+  * min\_yaw\_arm 
+  * amplitude\_roll\_arm 
+  * amplitude\_pitch\_arm 
+  * amplitude\_yaw\_arm 
+  * kurtosis\_roll\_dumbbell 
+  * kurtosis\_picth\_dumbbell 
+  * kurtosis\_yaw\_dumbbell 
+  * skewness\_roll\_dumbbell 
+  * skewness\_pitch\_dumbbell 
+  * skewness\_yaw\_dumbbell 
+  * max\_roll\_dumbbell 
+  * max\_picth\_dumbbell 
+  * max\_yaw\_dumbbell 
+  * min\_roll\_dumbbell 
+  * min\_pitch\_dumbbell 
+  * min\_yaw\_dumbbell 
+  * amplitude\_roll\_dumbbell 
+  * amplitude\_pitch\_dumbbell 
+  * amplitude\_yaw\_dumbbell 
+  * var\_accel\_dumbbell 
+  * avg\_roll\_dumbbell 
+  * stddev\_roll\_dumbbell 
+  * var\_roll\_dumbbell 
+  * avg\_pitch\_dumbbell 
+  * stddev\_pitch\_dumbbell 
+  * var\_pitch\_dumbbell 
+  * avg\_yaw\_dumbbell 
+  * stddev\_yaw\_dumbbell 
+  * var\_yaw\_dumbbell 
+  * kurtosis\_roll\_forearm 
+  * kurtosis\_picth\_forearm 
+  * kurtosis\_yaw\_forearm 
+  * skewness\_roll\_forearm 
+  * skewness\_pitch\_forearm 
+  * skewness\_yaw\_forearm 
+  * max\_roll\_forearm 
+  * max\_picth\_forearm 
+  * max\_yaw\_forearm 
+  * min\_roll\_forearm 
+  * min\_pitch\_forearm 
+  * min\_yaw\_forearm 
+  * amplitude\_roll\_forearm 
+  * amplitude\_pitch\_forearm 
+  * amplitude\_yaw\_forearm 
+  * var\_accel\_forearm 
+  * avg\_roll\_forearm 
+  * stddev\_roll\_forearm 
+  * var\_roll\_forearm 
+  * avg\_pitch\_forearm 
+  * stddev\_pitch\_forearm 
+  * var\_pitch\_forearm 
+  * avg\_yaw\_forearm 
+  * stddev\_yaw\_forearm 
+  * var\_yaw\_forearm   
+
+``` {r initialClean}
+training2 <- training[,-c(1)]
+training2 <- training2[,-c(11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,49,50,51,52,53,54,55,56,57,58,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,102,103,104,105,106,107,108,109,110,111,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,140,141,142,143,144,145,146,147,148,149)]
+
+write.table(training2,file="./pkpml-training2.csv",row.names=FALSE,sep=",")
+testing <- read.csv("./pkpml-testing.csv",header=TRUE)
+
+testing2 <- testing[,-c(1)]
+testing2 <- testing2[,-c(11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,49,50,51,52,53,54,55,56,57,58,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,102,103,104,105,106,107,108,109,110,111,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,140,141,142,143,144,145,146,147,148,149)]
+
+write.table(testing2, file="./pkpml-testing2.csv",row.names = FALSE,sep=",")
+
+```
+## Exploratory Analysis
+
+Before diving into any kind of modeling, it is beneficial to take time to understand the problem.  
+
+If we imagine the ideal movements of a biceps curl, the arm will start in the down position parallel to the legs. The forearm will rise up towards the shoulder with a minimum of roll (defined to be rotation about the axis formed by the forearm), a minimum of yaw (defined to be side to side motion with respect to the axis defined by the midline of the body), with pitch encompassing the whole range from  starting position near the thighs up to the shoulder. We expect the whole arm to swing less, but nevertheless reach a maximum pitch at the same time as the forearm. We expect acceleration of the forearm to be at or near the maximum at the midpoint of the arc of total motion.  
+
+The x-axis is defined to be the line going across the body, from right to left. The y-axis is defined to be in the vertical direction, going from foot to head. The z-axis describes depth going in backward and forwards direction, perpendicular to the plane defined by the x and y axes.  
+
+This describes the A class. What variables should we look for, based upon this preliminary analysis?   
+
+A variables: gyros\_arm\_y, gyros\_arm\_z, accel\_arm\_y, accel\_arm\_z, magnet\_arm\_y, magnet\_arm\_z, gyros\_dumbbell\_y, gyros\_dumbbell\_z, pitch\_dumbbell, accel\_dumbbell\_y, accel\_dumbbell\_z, magnet\_dumbbell\_y, magnet\_dumbbell\_z, pitch\_forearm, gyros\_forearm\_y, gyros\_forearm\_z, accel\_forearm\_y, accel\_forearm\_z, magnet\_forearm\_y, magnet\_forearm\_z  
+
+The B class describes an excess of forearm movement, such that the elbows are moved far forward. This motion reduces the work done by the biceps. We would expect in this case that arm motion along the  y and z-axis would be much greater than for any of the other classes, and perhaps arm acceleration along the z-axis would also be greater than for other classes.  
+
+We use the same variables as A, but there should be differences in range and median values.  
+
+The C class describes motion that is similar to A at onset, but has restricted motion along the y-axis, reaching only half the extent of behavior A. We would expect less forearm acceleration, less pitch in both forearm and arm, smaller range in y and z-axis movement. We expect the average y-position to be less than A.  
+
+We use the same variables as A, but should note differences in median, average, range.  
+
+The D class describes motion that is similar to A at onset, but once having reached maximum y-extent, does not return to the starting position until all repetitions are completed. In this case we would expect average y position to be greater than both A and C, but the range of y measurements for both arm and forearm should be about the same as class C.  
+
+Same variables as A, different values related to C.  
+
+The E class describes motion where the hips are thrust forward. In this case, we would expect the belt position to be significantly displaced from all of the other classes. In addition, we would expected more restricted movement along the y axis and perhaps some diminution in acceleration as well.
+E variables should be gyros\_belt\_z, magnet\_belt\_z plus same variables as A. Perhaps we can just test gyros\_belt\_x and magnet\_belt\_z and compare against all 5 classes.  
+
+We next try to visualize relationships between variables for each of the classes. Many comparisons were done, but only some are shown in this report. First we examine some means and medians for selected variables and visualize with box plots.  
+``` {r visualization1}
+library(dplyr)
+library(ggplot2)
+by_class <- group_by(training2, classe)
+summarise(by_class,mean(gyros_arm_x), median(gyros_arm_x))
+qplot(classe, gyros_arm_x, data=training2, fill=classe, geom=c("boxplot"))
+
+```
+  
+This is interesting in that it shows perhaps why class A is considered the correct way of performing the exercise, where at least 50% of the cases cluster closely about the median.  
+
+The acceleration about the x-axis seems to be a very good discriminator for the different classes, one of several that were discovered during exploratory analysis.  
+``` {r visualization2}
+summarise(by_class,mean(accel_arm_x), median(accel_arm_x))
+qplot(classe, accel_arm_x, data=training2, fill=classe, geom=c("boxplot"))
+```
+
+Similar investigations show that accel\_dumbbell\_x and magnet\_dumbbell\_x discriminate well among the classes.  
+
+Other variables serve to separate groups of classes from others. For example, looking at pitch_forearm data, we see that class A and D stand out from the rest of the classes.  
+
+``` {r visualization3}
+summarise(by_class,mean(pitch_forearm), median(pitch_forearm))
+qplot(classe, pitch_forearm, data=training2, fill=classe, geom=c("boxplot"))
+```
+
+Acting on assumptions that belt variables might serve to discriminate the E class, it was found that standard deviations of magnet\_belt\_y and magnet\_belt\_z were higher for class E.
+
+``` {r visualization4}
+summarise(by_class, sd(magnet_belt_y))
+summarise(by_class,mean(magnet_belt_z), median(magnet_belt_z))
+summarise(by_class, sd(magnet_belt_z))
+```
+
+Investigation of relationships between pairs of variables was also interesting. For example, plotting gyros_arm_x against magnet_arm_x appeared to create distinct profiles for each class.
+
+``` {r visualization5}
+qplot(gyros_arm_x, magnet_arm_x, colour=classe, facets=classe~.,data=training2)
+
+```
+
+The plot seems to reinforce the theme that class A is more centralized and focused than other classes whose profiles seem to disintegrate at each end of the plot.  
+
+Among many of the paired comparisons were many visually interesting plots, as the plot of yaw\_arm against pitch\_arm. It is not particularly clear what information this particular plot is revealing, but the investigation did seem to reveal distinctive profiles for each class that it was hoped would be picked up by the learning algorithms to be tried next.
+
+``` {r visualization6}
+qplot(yaw_arm, pitch_arm, colour=classe, facets=classe~.,data=training2)
+
+```
+
+## Dimensional Reduction
+Because of the large number of variables, it was thought that dimensional reduction might be necessary. It was decided that highly correlated variables should be investigated as a first step. Factor variables that were deemed unnecessary were removed.  
+
+Then we found the pairs of variables that were highly correlated.
+
+``` {r dimreduction1}
+pmltraining2 <- training2[,-c(1,4,5)]  # get rid of factor variables 
+pmlfinaltest2 <- testing2[,-c(1,4,5)] # do the same for the testing data set
+
+corrM <- abs(cor(pmltraining2[,-56])) # omit the classe variable
+diag(corrM) <- 0	# diagonals will all be 1
+v <- which(corrM > 0.8, arr.ind=T) # get the rows and columns for correlations greater than 0.8
+corrM[v]  # to get the actual values
+
+```
+  
+As we would expect for variables that are measured at the same time, many variables are highly correlated. It might be useful to attempt a PCA. However, the suspicion at the outset is that the data is not particularly linear, and therefore trying to find principal components might not be a fruitful method for analysis. Still, it is worth a try.
+
+We pre-process using method "pca" and then apply a linear discriminant analysis model.
+
+``` {r dimreduction2}
+inTrain <- createDataPartition(pmltraining2$classe, p=0.7, list=FALSE)
+pmltrainPca <- pmltraining2[inTrain,]
+pmltestPca <- pmltraining2[-inTrain,]
+preProc <- preProcess(pmltrainPca[,-56], method="pca",pcaComp=10)
+trainPC <- predict(preProc, pmltrainPca[,-56])
+modelFit <- train(pmltrainPca$classe ~ ., method="lda",data=trainPC)
+modelFit
+```
+  
+After training, we run the model against the test data set and examine the confusion matrix.  
+
+``` {r dimreduction3}
+testPC <- predict(preProc, pmltestPca[,-56])
+confusionMatrix(pmltestPca$classe, predict(modelFit, testPC))
+
+```
+  
+Because of the low accuracy rate, this line of analysis is abandoned for the time being. However, we should keep in mind the highly correlated variables.
+
+## Model Fitting
+We prepare our data sets by partitioning into training and testing. Because of the relatively large sample, the proportion used is 0.6 for training and 0.4 for testing. The testing data set is divided into two parts for additional cross-validation tests to be used with different models. Since we are seeking to predict classifications, it seems appropriate to try a random forest model.  
+
+``` {r modfitting1, cache=TRUE}
+oldWarnOps <- getOption("warn")
+options(warn=-1)
+
+inTrain <- createDataPartition(pmltraining2$classe, p=0.6, list=FALSE)
+pmltrainModel <- pmltraining2[inTrain,]
+testingtemp <- pmltraining2[-inTrain,]
+inTrain <- createDataPartition(testingtemp$classe, p=0.5, list=FALSE)
+pmltestModel1 <- testingtemp[inTrain,]
+pmltestModel2 <- testingtemp[-inTrain,]
+
+modfitrf <- train(classe ~ ., data=pmltrainModel, method="rf", prox=TRUE)
+modfitrf
+
+```
+  
+Out of curiosity, we can investigate individual trees, and the first few rows of tree number 2 are shown below.
+
+``` {r modfitting2}
+library(randomForest)
+head(getTree(modfitrf$finalModel, k=2))
+
+```
+  
+  
+Predictions are executed and a table displayed to show the accuracy of the prediction.
+
+``` {r modfitting3}
+predrf1 <- predict(modfitrf, pmltestModel1)
+tblPred1 <- table(predrf1, pmltestModel1$classe )
+tblPred1
+predrf2 <- predict(modfitrf, pmltestModel2)
+tblPred2 <- table(predrf2, pmltestModel2$classe)
+tblPred2
+
+options(warn = oldWarnOps)
+```
+
+Instantly, the worry is that overfitting has occurred. We can try boosting. According to scholarly articles like "Explaining AdaBoost" (http://www.cs.princeton.edu/~schapire/papers/explaining-adaboost.pdf), boosting seems to be highly resistant to overfitting.
+
+``` {r modfitting4, cache=TRUE}
+library(caret)
+modfitboost <- train(classe ~ ., method="gbm",data=pmltrainModel, verbose=FALSE)
+modfitboost
+
+```
+  
+The reported accuracy is impressive, and we move on to prediction.
+
+``` {r modfitting5}
+predictBoost1 <- predict(modfitboost, pmltestModel1)
+tblPredBoost1 <- table(predictBoost1, pmltestModel1$classe)
+tblPredBoost1
+predictBoost2 <- predict(modfitboost, pmltestModel2)
+tblPredBoost2 <- table(predictBoost2, pmltestModel2$classe)
+tblPredBoost2
+
+```
+  
+
+The test results are nearly as accurate as for random forests. The increased number of errors in prediction using the boosting algorithm seems more realistic than with random forests, and perhaps we can be a bit more confident in the results. We reserve both models to compare results against the test set pmlfinaltest2, the test set downloaded from the data source.
+
+
+## Summary
+The bulk of the work in this project clearly was devoted to understanding the problem, cleaning the data, and exploratory analysis. After verifying at least the possibility of discriminating the separate classes, the data were subjected to two exercises in model fitting using random forests and generalized boosting model. Using test data sets reserved for cross validation, the resulting predictions were nearly perfect. This was a surprising result and evoked worries of overfitting. Since two data sets were reserved for cross validation, and both results were satisfactory with an error rate of less than 0.4%, it seems reasonable to estimate an out of sample error of less than 10%. There is no firm mathematical basis for this estimate; an independent data set will need to be obtained for further testing.
